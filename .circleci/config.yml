@@ -3,7 +3,60 @@ jobs:
   build:
     docker:
       - image: circleci/ruby:2.5.3
+        environment:
+          BUNDLE_JOBS: 3
+          BUNDLE_RETRY: 3
+          BUNDLE_PATH: vendor/bundle
+          RAILS_ENV: test
+      - image: circleci/postgres:9.6-alpine
+        environment:
+          POSTGRES_USER: manage_courses_backend
+          POSTGRES_DB: manage_courses_backend_test
+          POSTGRES_PASSWORD: 'manage_courses_backend'
     steps:
       - checkout
-      - run: bundle exec rspec
 
+      - run:
+          name: Which bundler?
+          command: bundle -v
+
+      # Restore bundle cache
+      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+      - restore_cache:
+          keys:
+            - manage-courses-bundle-v2-{{ checksum "Gemfile.lock" }}
+            - manage-courses-bundle-v2-
+
+      - run:
+          name: Bundle Install
+          command: bundle check || bundle install
+
+      # Store bundle cache for Ruby dependencies
+      - save_cache:
+          key: manage-courses-bundle-v2-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+
+      - run:
+          name: Wait for DB
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      - run:
+          name: Database setup
+          command: bin/rails db:schema:load --trace
+
+      - run:
+          name: Run rspec tests
+          command: |
+            bundle exec rspec --profile 10 \
+                              --format RspecJunitFormatter \
+                              --out test_results/rspec.xml \
+                              --format progress \
+                              $(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)
+
+      # Save test results for timing analysis
+      # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+      - store_test_results:
+          path: test_results
+
+      # See https://circleci.com/docs/2.0/deployment-integrations/ for example deploy configs
