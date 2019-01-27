@@ -54,6 +54,9 @@ group :development, :test do
   gem 'pry'
   gem 'pry-byebug'
   gem 'rb-readline'
+
+  # RSpec formatter that CIs seem to like
+  gem 'rspec_junit_formatter'
 end
 
 group :development do
