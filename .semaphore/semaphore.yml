@@ -1,5 +1,5 @@
 version: v1.0
-name: First pipeline example
+name: Build
 agent:
   machine:
     type: e1-standard-2
@@ -56,10 +56,17 @@ blocks:
 
   - name: Push Image
     task:
+      env_vars:
+      - name: IMAGE_NAME
+        value: manage-courses-backend
+      secrets:
+      - name: docker-hub
       jobs:
       - name: Push
         commands:
-        - docker tag $IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
+        - export GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
         - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+        - docker pull $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
+        - docker tag $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
         - docker push $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
 
