@@ -1,0 +1,23 @@
+version: v1.0
+name: Build
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: Deploy
+    task:
+      env_vars:
+        - name: IMAGE_NAME
+          value: manage-courses-backend
+      secrets:
+      - name: docker-hub
+
+      jobs:
+        - name: Dev
+          commands:
+          - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+          - docker pull $DOCKER_USER/$IMAGE_NAME:$GIT_SHORT_SHA .
+          - docker tag $DOCKER_USER/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:master

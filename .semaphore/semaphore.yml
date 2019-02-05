@@ -19,7 +19,6 @@ blocks:
       - name: Docker build
         commands:
           - checkout
-          - echo APP_ENV=$APP_ENV
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - echo "Docker build $GIT_SHORT_SHA"
           - docker build -t $IMAGE_NAME:$GIT_SHORT_SHA .
@@ -70,3 +69,6 @@ blocks:
         - docker tag $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
         - docker push $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
 
+promotions:
+  - name: Dev deploy
+    pipeline_file: dev-deploy.yml
