@@ -40,6 +40,7 @@ blocks:
       - name: Setup Test Env
         commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
           - docker pull $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
           - docker-compose -f docker-compose-ci.yml start
       - name: RSpec
@@ -56,6 +57,8 @@ blocks:
         commands:
           - checkout
           - echo "make security"
+      secrets:
+      - name: docker-hub
 
   # - name: "Integration tests"
   #   task:
