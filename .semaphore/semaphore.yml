@@ -34,29 +34,28 @@ blocks:
   #         - checkout
   #         - echo "make smoke"
 
-  - name: "Unit tests"
+  - name: "Run tests"
     task:
       jobs:
-      - name: Setup Test Env
-        commands:
-          - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
-          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          - docker pull $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
-          - docker-compose -f docker-compose-ci.yml start
       - name: RSpec
         commands:
-          - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
-          - docker run -ti $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA rspec
-
-      - name: Lint code
-        commands:
           - checkout
-          - echo "make lint"
+          - export GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+          - docker pull $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
+          - docker-compose -f docker-compose-ci.yml up -d
+          - docker-compose -f docker-compose-ci.yml run web rails db:setup
+          - docker-compose -f docker-compose-ci.yml run web rails spec
+      # - name: Lint code
+      #   commands:
+      #     - checkout
+      #     - echo "make lint"
 
-      - name: Check security
-        commands:
-          - checkout
-          - echo "make security"
+      # - name: Check security
+      #   commands:
+      #     - checkout
+      #     - echo "make security"
+
       secrets:
       - name: docker-hub
 
