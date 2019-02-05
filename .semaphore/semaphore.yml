@@ -18,9 +18,13 @@ blocks:
           - echo APP_ENV=$APP_ENV
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - echo "Docker build $GIT_SHORT_SHA"
-          - docker build -t govukdfe/manage-courses-backend-semaphore:$GIT_SHORT_SHA .
-          - docker push govukdfe/manage-courses-backend-semaphore:$GIT_SHORT_SHA
+          - docker build -t manage-courses-backend:$GIT_SHORT_SHA .
+          - docker tag manage-courses-backend:$GIT_SHORT_SHA $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
+          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+          - docker push $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
           - echo "done"
+      secrets:
+      - name: docker-hub
 
   # - name: "Smoke tests"
   #   task:
@@ -36,11 +40,12 @@ blocks:
       - name: Setup Test Env
         commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+          - docker pull $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
           - docker-compose -f docker-compose-ci.yml start
       - name: RSpec
         commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
-          - docker run -ti govukdfe/manage-courses-backend-semaphore:$GIT_SHORT_SHA rspec
+          - docker run -ti $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA rspec
 
       - name: Lint code
         commands:
@@ -52,18 +57,18 @@ blocks:
           - checkout
           - echo "make security"
 
-  - name: "Integration tests"
-    task:
-      jobs:
-      - name: Cucumber
-        commands:
-          - checkout
-          - echo "make cucumber"
+  # - name: "Integration tests"
+  #   task:
+  #     jobs:
+  #     - name: Cucumber
+  #       commands:
+  #         - checkout
+  #         - echo "make cucumber"
 
-  - name: "Push Image"
-    task:
-      jobs:
-      - name: Push
-        commands:
-          - checkout
-          - echo "make docker.push"
+  # - name: "Push Image"
+  #   task:
+  #     jobs:
+  #     - name: Push
+  #       commands:
+  #         - checkout
+  #         - echo "make docker.push"
