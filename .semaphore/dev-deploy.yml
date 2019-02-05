@@ -19,5 +19,6 @@ blocks:
           commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          - docker pull $DOCKER_USER/$IMAGE_NAME:$GIT_SHORT_SHA .
-          - docker tag $DOCKER_USER/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:master
+          - docker pull $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
+          - docker tag $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:dev
+          - docker push $DOCKER_USERNAME/$IMAGE_NAME:dev
