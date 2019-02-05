@@ -11,6 +11,10 @@ blocks:
       env_vars:
         - name: APP_ENV
           value: prod
+        - name: IMAGE_NAME
+          value: manage-courses-backend
+      secrets:
+      - name: docker-hub
       jobs:
       - name: Docker build
         commands:
@@ -18,59 +22,44 @@ blocks:
           - echo APP_ENV=$APP_ENV
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - echo "Docker build $GIT_SHORT_SHA"
-          - docker build -t manage-courses-backend:$GIT_SHORT_SHA .
-          - docker tag manage-courses-backend:$GIT_SHORT_SHA $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
+          - docker build -t $IMAGE_NAME:$GIT_SHORT_SHA .
+          - docker tag $IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
           - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          - docker push $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
+          - docker push $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
           - echo "done"
+
+  - name: Run Tests
+    task:
+      env_vars:
+        - name: APP_ENV
+          value: prod
+        - name: IMAGE_NAME
+          value: manage-courses-backend
       secrets:
       - name: docker-hub
-
-  # - name: "Smoke tests"
-  #   task:
-  #     jobs:
-  #     - name: Smoke
-  #       commands:
-  #         - checkout
-  #         - echo "make smoke"
-
-  - name: "Run tests"
-    task:
+      prologue:
+        commands:
+        - checkout
+        - export GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+        - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+        - docker pull $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
+        - docker-compose -f docker-compose-ci.yml up -d
+        - docker-compose -f docker-compose-ci.yml run web rails db:setup
       jobs:
       - name: RSpec
         commands:
-          - checkout
-          - export GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
-          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-          - docker pull $DOCKER_USERNAME/manage-courses-backend:$GIT_SHORT_SHA
-          - docker-compose -f docker-compose-ci.yml up -d
-          - docker-compose -f docker-compose-ci.yml run web rails db:setup
-          - docker-compose -f docker-compose-ci.yml run web rails spec
-      # - name: Lint code
-      #   commands:
-      #     - checkout
-      #     - echo "make lint"
+        - docker-compose -f docker-compose-ci.yml run web rails spec
 
-      # - name: Check security
-      #   commands:
-      #     - checkout
-      #     - echo "make security"
+      - name: Ruby Lint
+        commands:
+        - docker-compose -f docker-compose-ci.yml run web bundle exec govuk-lint-ruby app config db lib spec
 
-      secrets:
-      - name: docker-hub
+  - name: Push Image
+    task:
+      jobs:
+      - name: Push
+        commands:
+        - docker tag $IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
+        - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+        - docker push $DOCKER_USERNAME/$IMAGE_NAME:$SEMAPHORE_GIT_BRANCH
 
-  # - name: "Integration tests"
-  #   task:
-  #     jobs:
-  #     - name: Cucumber
-  #       commands:
-  #         - checkout
-  #         - echo "make cucumber"
-
-  # - name: "Push Image"
-  #   task:
-  #     jobs:
-  #     - name: Push
-  #       commands:
-  #         - checkout
-  #         - echo "make docker.push"
