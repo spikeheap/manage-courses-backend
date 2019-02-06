@@ -21,7 +21,7 @@ blocks:
           commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - checkout
-          - curl -L https://aka.ms/InstallAzureCli | bash
+          - .semaphore/install-azure-cli.sh
           - az login --service-principal  -u "#{AZURE_CLIENT_ID}" -p "${AZURE_SECRET}" --tenant "$AZURE_TENANT_ID"
           - az group deployment create --name "Dev Deploy" \
                                        --resource-group "$AZURE_RESOURCE_GROUP" \
