@@ -17,10 +17,14 @@ blocks:
       - name: azure-manage-courses-backend-dev2
 
       jobs:
-        - name: Dev
+        - name: Deploy App and Infrastructure
           commands:
           - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
           - checkout
+          - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+          - docker pull $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA
+          - docker tag $DOCKER_USERNAME/$IMAGE_NAME:$GIT_SHORT_SHA $DOCKER_USERNAME/$IMAGE_NAME:dev2
+          - docker push $DOCKER_USERNAME/$IMAGE_NAME:dev2
           - .semaphore/install-azure-cli.sh
           - az login --service-principal  -u "${AZURE_CLIENT_ID}" -p "${AZURE_SECRET}" --tenant "$AZURE_TENANT_ID"
           - az group deployment create --name "Dev2-Deploy"
