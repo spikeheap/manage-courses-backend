@@ -1,0 +1,50 @@
+version: v1.0
+name: Build
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: Deploy
+    task:
+      env_vars:
+        - name: IMAGE_NAME
+          value: manage-courses-backend
+      secrets:
+      - name: docker-hub
+      - name: azure
+      - name: azure-manage-courses-backend-dev2
+
+      jobs:
+        - name: Dev
+          commands:
+          - GIT_SHORT_SHA=$(echo $SEMAPHORE_GIT_SHA | cut -c 1-7)
+          - checkout
+          - .semaphore/install-azure-cli.sh
+          - az login --service-principal  -u "${AZURE_CLIENT_ID}" -p "${AZURE_SECRET}" --tenant "$AZURE_TENANT_ID"
+          - az group deployment create --name "Dev2-Deploy"
+                                       --resource-group "$AZURE_RESOURCE_GROUP"
+                                       --template-file azure/template.json
+                                       --parameters appServiceName="$APP_SERVICE_NAME"
+                                       --parameters authenticationToken="$AUTHENTICATION_TOKEN"
+                                       --parameters appServicePlanName="$APP_SERVICE_PLAN_NAME"
+                                       --parameters dockerHubUsername="$DOCKER_USERNAME"
+                                       --parameters containerImageReference="$IMAGE_NAME:dev2"
+                                       --parameters databaseName="$DATABASE_NAME"
+                                       --parameters databaseServerHostName="$DATABASE_SERVER_HOST_NAME"
+                                       --parameters databasePort="$DATABASE_PORT"
+                                       --parameters databaseUsername="$DATABASE_USERNAME"
+                                       --parameters databasePassword="$DATABASE_PASSWORD"
+                                       --parameters secretKeyBase="$SECRET_KEY_BASE"
+                                       --parameters sentryDSN="$SENTRY_DSN"
+          - az webapp start --name "$APP_SERVICE_NAME"
+                            --resource-group "$AZURE_RESOURCE_GROUP"
+                            --slot "staging"
+          - az webapp deployment slot swap --name "$APP_SERVICE_NAME"
+                                           --resource-group "$AZURE_RESOURCE_GROUP"
+                                           --slot "staging"
+                                           --target-slot "production"
+          - az webapp stop --name "$APP_SERVICE_NAME"
+                           --resource-group "$AZURE_RESOURCE_GROUP"
+                           --slot "staging"

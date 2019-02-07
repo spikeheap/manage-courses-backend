@@ -72,3 +72,5 @@ blocks:
 promotions:
   - name: Dev deploy
     pipeline_file: dev-deploy.yml
+  - name: Dev2 deploy
+    pipeline_file: dev2-deploy.yml
