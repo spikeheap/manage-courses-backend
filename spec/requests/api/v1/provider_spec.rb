@@ -273,7 +273,6 @@ describe 'Providers API', type: :request do
 
       context "with many providers" do
         it 'pages properly' do
-
           11.times do |i|
             create(:provider, provider_code: "PROV#{i + 1}",
                    last_published_at: (20 - i).minutes.ago,
@@ -311,13 +310,13 @@ describe 'Providers API', type: :request do
         end
 
 
-      it 'pages properly with 25 providers' do
-        25.times do |i|
-          create(:provider, provider_code: "PROV#{i + 1}",
-                 last_published_at: (30 - i).minutes.ago,
-                 sites: [],
-                 enrichments: [])
-        end
+        it 'pages properly with 25 providers' do
+          25.times do |i|
+            create(:provider, provider_code: "PROV#{i + 1}",
+                   last_published_at: (30 - i).minutes.ago,
+                   sites: [],
+                   enrichments: [])
+          end
 
           get '/api/v1/providers',
             headers: { 'HTTP_AUTHORIZATION' => credentials },

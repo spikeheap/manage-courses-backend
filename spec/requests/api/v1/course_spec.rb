@@ -121,6 +121,20 @@ RSpec.describe "Courses API", type: :request do
           }
         ])
       end
+
+      it 'includes correct next link in response headers' do
+        create(:course, course_code: "LAST1", age: 10.minutes.ago, provider: provider)
+
+        timestamp_of_last_course = 2.minutes.ago
+        last_course_in_results = create(:course, course_code: "LAST2", age: timestamp_of_last_course, provider: provider)
+
+        get '/api/v1/courses',
+          headers: { 'HTTP_AUTHORIZATION' => credentials }
+
+        expect(response.headers).to have_key "Link"
+        expected = /#{request.base_url + request.path}\?changed_since=#{(timestamp_of_last_course + 1.second).utc.iso8601}&from_course_id=#{last_course_in_results.id}&per_page=100; rel="next"$/
+        expect(response.headers["Link"]).to match expected
+      end
     end
 
     context "with changed_since parameter" do
