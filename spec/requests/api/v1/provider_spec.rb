@@ -272,16 +272,15 @@ describe 'Providers API', type: :request do
       end
 
       context "with many providers" do
-        before do
+        it 'pages properly' do
+
           11.times do |i|
             create(:provider, provider_code: "PROV#{i + 1}",
                    last_published_at: (20 - i).minutes.ago,
                    sites: [],
                    enrichments: [])
           end
-        end
 
-        it 'pages properly' do
           get '/api/v1/providers',
             headers: { 'HTTP_AUTHORIZATION' => credentials },
             params: { changed_since: 21.minutes.ago.utc.iso8601, per_page: 10 }
@@ -300,6 +299,62 @@ describe 'Providers API', type: :request do
 
           expect(returned_provider_codes.size).to eq 1
           expect(returned_provider_codes).to include "PROV11"
+
+          next_url = response.headers["Link"]
+
+          get next_url,
+            headers: { 'HTTP_AUTHORIZATION' => credentials }
+
+          returned_provider_codes = get_provider_codes_from_body(response.body)
+
+          expect(returned_provider_codes.size).to eq 0
+        end
+
+
+      it 'pages properly with 25 providers' do
+        25.times do |i|
+          create(:provider, provider_code: "PROV#{i + 1}",
+                 last_published_at: (30 - i).minutes.ago,
+                 sites: [],
+                 enrichments: [])
+        end
+
+          get '/api/v1/providers',
+            headers: { 'HTTP_AUTHORIZATION' => credentials },
+            params: { changed_since: 50.minutes.ago.utc.iso8601, per_page: 10 }
+
+          returned_provider_codes = get_provider_codes_from_body(response.body)
+
+          expected_provider_codes = (1..10).map { |n| "PROV#{n}" }
+          expect(returned_provider_codes).to match_array expected_provider_codes
+
+          next_url = response.headers["Link"]
+
+          get next_url,
+            headers: { 'HTTP_AUTHORIZATION' => credentials }
+
+          returned_provider_codes = get_provider_codes_from_body(response.body)
+
+
+          expected_provider_codes = (11..20).map { |n| "PROV#{n}" }
+          expect(returned_provider_codes).to match_array expected_provider_codes
+
+
+          expect(returned_provider_codes.size).to eq 10
+          expect(returned_provider_codes).to include "PROV11"
+
+          next_url = response.headers["Link"]
+
+          get next_url,
+            headers: { 'HTTP_AUTHORIZATION' => credentials }
+
+          returned_provider_codes = get_provider_codes_from_body(response.body)
+
+          expected_provider_codes = (21..25).map { |n| "PROV#{n}" }
+          expect(returned_provider_codes).to match_array expected_provider_codes
+
+          expect(returned_provider_codes.size).to eq 5
+          expect(returned_provider_codes).to include "PROV25"
 
           next_url = response.headers["Link"]
 
