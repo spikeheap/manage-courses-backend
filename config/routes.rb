@@ -56,16 +56,12 @@ Rails.application.routes.draw do
     end
 
     namespace :v2 do
-      resources :providers
-
       resources :users do
         resources :providers
       end
 
-      scope :providers do
-        scope "/(:provider_code)" do
-          resources :courses
-        end
+      resources :providers do
+        resources :courses
       end
     end
   end
