@@ -59,6 +59,8 @@ class Course < ApplicationRecord
     end
   end
 
+  scope :providers_have_opted_in, -> { joins(:provider).where('provider.opted_in = true')  }
+
   def recruitment_cycle
     "2019"
   end
